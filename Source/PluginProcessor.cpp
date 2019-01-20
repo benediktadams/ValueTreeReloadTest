@@ -31,20 +31,7 @@ ValueTreeReloadTestAudioProcessor::ValueTreeReloadTestAudioProcessor()
                                                                      ,0.5f
                                                                      ,"unit"
                                                                      ));
-    tree.createAndAddParameter(std::make_unique<AudioParameterFloat>(
-                                                                     "testParam2"
-                                                                     ,"TestParam2"
-                                                                     ,NormalisableRange<float>(0.0f, 1.0f)
-                                                                     ,0.5f
-                                                                     ,"unit"
-                                                                     ));
-    tree.createAndAddParameter(std::make_unique<AudioParameterFloat>(
-                                                                     "testParam3"
-                                                                     ,"TestParam3"
-                                                                     ,NormalisableRange<float>(0.0f, 1.0f)
-                                                                     ,0.5f
-                                                                     ,"unit"
-                                                                     ));
+
     
     tree.state = ValueTree("PARAMS");
     
@@ -58,6 +45,7 @@ ValueTreeReloadTestAudioProcessor::~ValueTreeReloadTestAudioProcessor()
 
 void ValueTreeReloadTestAudioProcessor::savePreset(String name) noexcept
 {
+    DBG( tree.state.toXmlString() );
     File newPreset (desktopDir.getFullPathName() + "/" + name + ".xml");
     
     if (newPreset.exists())
@@ -65,26 +53,28 @@ void ValueTreeReloadTestAudioProcessor::savePreset(String name) noexcept
     
     newPreset.create();
     
-    ScopedPointer<XmlElement> xml = tree.state.createXml();
-    
-    xml->writeToFile(newPreset, "");
-    
+    if( ScopedPointer<XmlElement> xml = tree.state.createXml() )
+        xml->writeToFile(newPreset, "");
+    else
+        jassertfalse;
 }
 
 void ValueTreeReloadTestAudioProcessor::loadPreset(File file) noexcept
 {
     if (file.existsAsFile())
     {
-        ScopedPointer<XmlElement> xml = XmlDocument::parse(file);
-        
-        if(!xml)
-            return;
-        
-        auto newTree = ValueTree::fromXml(*xml);
-        
-        
-        tree.state.copyPropertiesAndChildrenFrom(newTree, undoManager);
-        
+        if( ScopedPointer<XmlElement> xml = XmlDocument::parse(file) )
+        {
+            auto newTree = ValueTree::fromXml(*xml);
+            if( newTree.isValid() )
+                tree.state.copyPropertiesAndChildrenFrom(newTree, undoManager);
+            else
+                jassertfalse;
+        }
+        else
+        {
+            jassertfalse;
+        }
     }
 }
 
